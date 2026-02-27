@@ -21,9 +21,9 @@ colorama>=0.4.6          # Terminal colors for better output
 tqdm>=4.66.0             # Progress bars
 rich>=13.0.0             # Rich text formatting for CLI
 
+# Production server
+gunicorn>=21.0.0         # WSGI HTTP Server for production
+
 # Optional: For advanced text similarity
 # sentence-transformers>=2.2.0  # Semantic text embeddings (heavy dependency)
 # Levenshtein>=0.21.0           # Fast string similarity
-
-# Production Server
-gunicorn>=21.0.0

@@ -1,253 +1,247 @@
-# DSS 검수 시스템
+# 어닝콜 DSS 자동 검수 시스템 (프로토타입)
 
-어닝콜 원문과 DSS(Daily Stock Summary) 요약본을 비교하여 수치 오류, 문맥 이슈를 자동으로 검증하는 AI 기반 웹 검수 시스템입니다.
+Claude API를 활용하여 어닝콜 문서와 DSS 재무 데이터를 자동으로 비교하고 불일치를 감지하는 시스템입니다.
 
-## 🌟 주요 기능
+## 🎯 주요 기능
 
-- **자동 검증**: Claude AI를 사용하여 DSS 문장을 하나씩 검증
-- **수치 불일치 탐지**: 어닝콜 원문과 DSS의 숫자, 단위 불일치 자동 탐지
-- **문맥 이슈 검출**: 과장, 축소, 누락된 정보 감지
-- **실시간 수정**: 승인, 거부, 수동 편집 기능
-- **최종 수정안 생성**: DSS 형식으로 최종 수정안 자동 생성
-- **직관적인 웹 UI**: Bootstrap 5 기반의 사용하기 쉬운 인터페이스
-
-## 📋 검증 항목
-
-### 수치 이슈 (빨간색 ❌)
-- 매출, 이익, 가이던스 등의 숫자 불일치
-- 단위 오류 (억원 vs 조원)
-- 기간 정보 오류
-
-### 문맥 이슈 (노란색 ⚠️)
-- 과장 또는 축소된 표현
-- 조건 누락 (단서 조항 생략)
-- 불완전한 정보
-
-### 일치함 (초록색 ✅)
-- 어닝콜 원문과 일치하는 정확한 문장
-
-## 🚀 설치 및 실행
-
-### 1. 저장소 클론
-
-\`\`\`bash
-git clone https://github.com/your-username/dss-validation-system.git
-cd dss-validation-system
-\`\`\`
-
-### 2. Python 가상환경 생성 (권장)
-
-\`\`\`bash
-python -m venv venv
-
-# Windows
-venv\Scripts\activate
-
-# macOS/Linux
-source venv/bin/activate
-\`\`\`
-
-### 3. 패키지 설치
-
-\`\`\`bash
-pip install -r requirements.txt
-\`\`\`
-
-### 4. 환경변수 설정
-
-\`.env.example\` 파일을 복사하여 \`.env\` 파일 생성:
-
-\`\`\`bash
-# Windows
-copy .env.example .env
-
-# macOS/Linux
-cp .env.example .env
-\`\`\`
-
-\`.env\` 파일을 열어 API 키 입력:
-
-\`\`\`env
-ANTHROPIC_API_KEY=your_actual_api_key_here
-CLAUDE_MODEL=claude-3-haiku-20240307
-MAX_TOKENS=4096
-TEMPERATURE=0.0
-DEBUG=False
-\`\`\`
-
-**API 키 발급**: [Anthropic Console](https://console.anthropic.com/)
-
-### 5. 서버 실행
-
-\`\`\`bash
-python app.py
-\`\`\`
-
-브라우저에서 접속: **http://localhost:5000**
+- **LLM 기반 텍스트 파싱**: Claude API로 비구조화 텍스트에서 재무 지표 자동 추출
+- **지능형 매칭**: 항목명 유사도 기반 자동 매칭
+- **불일치 감지**: 수치 비교 및 차이 분석
+- **다국어 지원**: 한글/영문 어닝콜 문서 처리
+- **유연한 출력**: 텍스트, 마크다운, JSON 형식 지원
 
 ## 📁 프로젝트 구조
 
-\`\`\`
-dss-validation-system/
-├── app.py                      # Flask 메인 애플리케이션
+```
+.
+├── main.py                           # 메인 실행 스크립트
 ├── src/
-│   └── financial_parser.py     # DSS 검증 로직
-├── templates/
-│   └── index_new.html          # 메인 UI
-├── static/
-│   └── js/
-│       └── index_new.js        # 프론트엔드 로직
-├── requirements.txt            # Python 패키지 목록
-├── .env.example                # 환경변수 예시
-├── .gitignore                  # Git 제외 파일 목록
-└── README.md                   # 프로젝트 문서
-\`\`\`
+│   ├── financial_parser.py          # Claude API 기반 재무 데이터 파서
+│   └── discrepancy_detector.py      # 불일치 감지 엔진
+├── data/
+│   ├── sample_earning_call_2024Q4.txt       # 샘플 어닝콜 문서 (한글)
+│   ├── sample_earning_call_2024Q4_EN.txt    # 샘플 어닝콜 문서 (영문)
+│   ├── sample_dss_data_2024Q4.txt           # 샘플 DSS 데이터 (한글)
+│   └── SAMPLE_DATA_README.md                # 샘플 데이터 설명
+├── output/                           # 결과 출력 디렉토리
+├── requirements.txt                  # Python 의존성
+├── .env.example                      # 환경 변수 예시
+└── README.md                         # 본 문서
+```
 
-## 🌐 웹 배포
+## 🚀 시작하기
 
-### Render.com 무료 배포
+### 1. 필수 요구사항
 
-1. **requirements.txt에 gunicorn 추가**
+- Python 3.8 이상
+- Anthropic API Key (Claude API 접근)
 
-\`\`\`bash
-echo "gunicorn>=21.0.0" >> requirements.txt
-\`\`\`
+### 2. 설치
 
-2. **GitHub에 코드 업로드**
+```bash
+# 1. 의존성 설치
+pip install -r requirements.txt
 
-\`\`\`bash
-git init
-git add .
-git commit -m "Initial commit"
-git branch -M main
-git remote add origin https://github.com/your-username/dss-validation-system.git
-git push -u origin main
-\`\`\`
+# 2. 환경 변수 설정
+cp .env.example .env
 
-3. **Render.com 계정 생성**
-   - [Render.com](https://render.com) 접속
-   - GitHub 계정으로 로그인
+# 3. .env 파일 편집하여 API 키 입력
+# ANTHROPIC_API_KEY=your_api_key_here
+```
 
-4. **새 Web Service 생성**
-   - "New +" 버튼 클릭
-   - "Web Service" 선택
-   - GitHub 저장소 연결
+### 3. API 키 발급
 
-5. **배포 설정**
-   - **Name**: dss-validation-system
-   - **Environment**: Python 3
-   - **Build Command**: \`pip install -r requirements.txt\`
-   - **Start Command**: \`gunicorn app:app\`
-   - **Instance Type**: Free
+1. [Anthropic Console](https://console.anthropic.com/)에 가입
+2. API Keys 메뉴에서 새 키 생성
+3. `.env` 파일에 키 입력
 
-6. **환경 변수 추가**
-   - "Environment" 탭 클릭
-   - Add Environment Variable:
-     - Key: \`ANTHROPIC_API_KEY\`
-     - Value: 본인의 API 키
+## 💻 사용법
 
-7. **배포 시작**
-   - "Create Web Service" 클릭
-   - 5-10분 후 자동 배포 완료
-   - 제공된 URL로 접속 가능
+### 기본 사용
 
-## 🎯 사용 방법
+```bash
+python main.py --earning-call data/sample_earning_call_2024Q4.txt --dss data/sample_dss_data_2024Q4.txt
+```
 
-### 1. 파일 업로드
-- **어닝콜 원문**: PDF URL 입력 또는 텍스트 직접 입력
-- **DSS 요약본**: 텍스트 직접 입력 (### 섹션, ## 문장 형식)
+### 결과를 파일로 저장
 
-### 2. 검증 결과 확인
-- 섹션별로 이슈 확인 (실적발표, 가이던스, Q&A)
-- 각 항목의 문제 유형 및 수정안 확인
-- 좌측 사이드바에서 전체 항목 목록 확인
+```bash
+python main.py \
+  -e data/sample_earning_call_2024Q4.txt \
+  -d data/sample_dss_data_2024Q4.txt \
+  -o output/report.md \
+  --format markdown
+```
 
-### 3. 수정안 승인/거부
-- **승인 ✅**: 수정안 적용
-- **거부 ❌**: 원본 유지
-- **수동 ✏️**: 직접 편집
+### 영문 어닝콜 문서 처리
 
-### 4. 최종 수정안
-- "최종 수정안" 탭에서 결과 확인
-- "전체 복사" 버튼으로 클립보드에 복사
-- DSS 형식으로 자동 출력
+```bash
+python main.py \
+  -e data/sample_earning_call_2024Q4_EN.txt \
+  -d data/sample_dss_data_2024Q4.txt
+```
 
-### 5. 새로 시작하기
-- 상단 "새로 시작하기" 버튼으로 초기화
+### 파싱된 데이터 저장 (디버깅용)
 
-## ⚙️ 환경변수
+```bash
+python main.py \
+  -e data/sample_earning_call_2024Q4.txt \
+  -d data/sample_dss_data_2024Q4.txt \
+  --save-parsed \
+  --debug
+```
 
-| 변수명 | 설명 | 기본값 | 필수 |
-|--------|------|--------|------|
-| \`ANTHROPIC_API_KEY\` | Claude API 키 | - | ✅ |
-| \`CLAUDE_MODEL\` | 사용할 Claude 모델 | claude-3-haiku-20240307 | ❌ |
-| \`MAX_TOKENS\` | 최대 토큰 수 | 4096 | ❌ |
-| \`TEMPERATURE\` | AI 응답 다양성 (0.0-1.0) | 0.0 | ❌ |
-| \`DEBUG\` | 디버그 모드 | False | ❌ |
+이 명령은 `output/parsed_earning_call.json`과 `output/parsed_dss.json` 파일을 생성합니다.
+
+## 📊 출력 예시
+
+### 텍스트 형식 (기본)
+
+```
+================================================================================
+                      어닝콜 vs DSS 데이터 검수 결과
+================================================================================
+
+[ 요약 통계 ]
+  총 어닝콜 항목: 28개
+  총 DSS 항목: 28개
+  ✅ 일치: 26개
+  ⚠️  불일치: 2개
+  📌 어닝콜에만 존재: 0개
+  📌 DSS에만 존재: 0개
+  매칭률: 92.9%
+
+================================================================================
+                    ⚠️  불일치 항목 상세 (2건)
+================================================================================
+
+[1] 영업이익 (2024-Q4)
+  📄 어닝콜 원본: 185.00 억원
+     문맥: "영업이익은 185억원을 기록하여 전년 동기 대비 22.5% 증가했으며..."
+  📊 DSS 데이터: 178.00 억원
+     문맥: "영업이익은 1,780억원으로써 전분기 대비 8.2% 증가했으며..."
+  ⚖️  차이: -7.00 억원 (-3.78%)
+  🎯 항목 유사도: 100.0%
+
+[2] 광고선전비 (2024-Q4)
+  📄 어닝콜 원본: 45.00 억원
+     문맥: "광고선전비는 45억원, 감가상각비는 67억원이 발생했습니다..."
+  📊 DSS 데이터: 52.00 억원
+     문맥: "광고선전비는 520억원으로 브랜드 마케팅에 적극 투자했습니다..."
+  ⚖️  차이: +7.00 억원 (+15.56%)
+  🎯 항목 유사도: 100.0%
+```
+
+## 🔧 명령줄 옵션
+
+```
+usage: main.py [-h] -e EARNING_CALL -d DSS [-o OUTPUT] [-f {text,markdown,json}]
+               [-t THRESHOLD] [--save-parsed] [--debug]
+
+옵션:
+  -h, --help            도움말 표시
+  -e, --earning-call    어닝콜 문서 파일 경로 (필수)
+  -d, --dss             DSS 데이터 파일 경로 (필수)
+  -o, --output          결과 출력 파일 경로
+  -f, --format          출력 형식 (text/markdown/json)
+  -t, --threshold       불일치 판단 임계값 (기본값: 0.01 = 1%)
+  --save-parsed         파싱된 데이터를 JSON으로 저장
+  --debug               디버그 모드 활성화
+```
+
+## 🧪 테스트
+
+샘플 데이터로 시스템을 테스트해보세요:
+
+```bash
+# 한글 문서 테스트
+python main.py -e data/sample_earning_call_2024Q4.txt -d data/sample_dss_data_2024Q4.txt
+
+# 영문 문서 테스트
+python main.py -e data/sample_earning_call_2024Q4_EN.txt -d data/sample_dss_data_2024Q4.txt
+
+# 마크다운 보고서 생성
+python main.py -e data/sample_earning_call_2024Q4.txt -d data/sample_dss_data_2024Q4.txt \
+  -o output/report.md --format markdown
+
+# JSON 결과 생성
+python main.py -e data/sample_earning_call_2024Q4.txt -d data/sample_dss_data_2024Q4.txt \
+  -o output/result.json --format json
+```
 
 ## 🛠️ 기술 스택
 
-- **Backend**: Python 3.8+, Flask 2.3+
-- **AI**: Claude 3 Haiku (Anthropic API)
-- **Frontend**: HTML5, JavaScript (ES6+), Bootstrap 5
-- **파일 처리**: PyPDF2, pdfplumber, python-docx
-- **배포**: Render.com, Gunicorn
+- **LLM**: Claude 3.5 Sonnet (Anthropic API)
+- **언어**: Python 3.8+
+- **주요 라이브러리**:
+  - `anthropic`: Claude API SDK
+  - `python-dotenv`: 환경 변수 관리
+  - `pandas`: 데이터 처리 (옵션)
 
-## 🔍 주요 알고리즘
+## 📝 작동 원리
 
-### 문장 분리
-- 마침표(.) 기준으로 문장 분리
-- 숫자 (예: 1.5조원) 구분 처리
+### 1. 텍스트 파싱
+Claude API에 프롬프트를 전송하여 텍스트에서 재무 지표 추출:
+- 항목명 (예: "매출액", "영업이익")
+- 금액 (예: 1,250, 185)
+- 단위 (예: "억원", "%")
+- 기간 (예: "2024-Q4")
+- 원문 문맥
 
-### 수치 검증
-- 어닝콜 원문에서 수치 추출
-- DSS 문장의 수치와 비교
-- 단위 자동 변환 및 비교
+### 2. 데이터 정규화
+- 단위 통일: "1,780억원" → 178 (억원 기준)
+- 항목명 표준화: "영업익" → "영업이익"
+- 기간 표준화: "4분기" → "2024-Q4"
 
-### JSON 파싱 에러 처리
-- 제어 문자 자동 제거
-- Trailing comma 자동 수정
-- 불완전한 JSON 복구 시도
+### 3. 매칭
+- 기간이 같은 항목끼리 비교
+- 항목명 유사도 계산 (문자열 유사도)
+- 최고 유사도 항목과 매칭
 
-## 📊 API 사용량
+### 4. 불일치 감지
+- 값 차이 계산
+- 임계값(기본 1%) 초과 시 불일치로 판단
+- 차이 금액 및 비율 리포트
 
-Claude Haiku 기준:
-- **입력**: 약 $0.25 / 1M tokens
-- **출력**: 약 $1.25 / 1M tokens
-- DSS 문장 1개당 평균 500 tokens 사용
-- 50문장 검증 시 약 $0.05 예상
+## 🎯 알려진 제한사항
 
-## 🔒 보안
+- **PDF 지원**: 현재 버전은 텍스트 파일만 지원, PDF는 추후 추가 예정
+- **표/이미지**: 복잡한 표나 이미지 내 텍스트는 처리 불가
+- **API 비용**: Claude API 호출 시 비용 발생 (토큰 사용량에 따라)
+- **처리 속도**: LLM 호출로 인해 CSV 파싱 대비 느림
 
-- **API 키 보호**: .gitignore로 .env 파일 제외
-- **환경변수**: 서버 환경변수로 안전하게 관리
-- **HTTPS**: Render.com 자동 제공
+## 🚧 개발 로드맵
 
-## 📝 라이센스
+### MVP (현재)
+- [x] LLM 기반 텍스트 파싱
+- [x] 기본 매칭 및 불일치 감지
+- [x] 텍스트/마크다운 보고서
 
-MIT License
+### P1 (다음 단계)
+- [ ] Claude Skills 통합
+- [ ] RAG 기반 검색 기능
+- [ ] 웹 UI 개발
+- [ ] PDF 파일 지원
+
+### P2 (향후)
+- [ ] 대시보드 및 이력 관리
+- [ ] 실시간 모니터링
+- [ ] 다중 문서 배치 처리
+
+## 📄 라이선스
+
+이 프로젝트는 프로토타입이며 교육 및 평가 목적으로 제작되었습니다.
 
 ## 🤝 기여
 
-이슈 및 PR 환영합니다!
-
-1. Fork the Project
-2. Create your Feature Branch (\`git checkout -b feature/AmazingFeature\`)
-3. Commit your Changes (\`git commit -m 'Add some AmazingFeature'\`)
-4. Push to the Branch (\`git push origin feature/AmazingFeature\`)
-5. Open a Pull Request
+프로토타입 단계이므로 기여는 제한적입니다. 이슈 및 제안은 환영합니다.
 
 ## 📧 문의
 
-문제가 발생하면 [Issues](https://github.com/your-username/dss-validation-system/issues)에 등록해주세요.
-
-## 🙏 감사의 말
-
-- Claude API by Anthropic
-- Bootstrap 5
-- Font Awesome
+문의사항이 있으시면 이슈를 등록해주세요.
 
 ---
 
-**최종 업데이트**: 2026-02-27
-**버전**: 1.0.0
+**생성일**: 2026-02-10
+**버전**: 0.1.0 (Prototype)
+**기반**: PRD/TRD 문서

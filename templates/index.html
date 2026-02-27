@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>어닝콜 DSS 자동 검수 시스템</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 2rem 0;
+        }
+
+        .main-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .card {
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            border: none;
+        }
+
+        .header-card {
+            background: white;
+            margin-bottom: 2rem;
+        }
+
+        .upload-zone {
+            border: 3px dashed #cbd5e1;
+            border-radius: 10px;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.3s;
+            background: #f8fafc;
+        }
+
+        .upload-zone:hover {
+            border-color: var(--primary-color);
+            background: #f1f5f9;
+        }
+
+        .upload-zone.dragover {
+            border-color: var(--success-color);
+            background: #ecfdf5;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            border: none;
+            padding: 0.75rem 2rem;
+            font-weight: 600;
+            border-radius: 10px;
+        }
+
+        .btn-primary:hover {
+            background: #1d4ed8;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(37, 99, 235, 0.3);
+        }
+
+        .results-card {
+            display: none;
+            margin-top: 2rem;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .discrepancy-item {
+            border-left: 4px solid var(--danger-color);
+            padding: 1rem;
+            margin-bottom: 1rem;
+            background: #fef2f2;
+            border-radius: 5px;
+        }
+
+        .match-item {
+            border-left: 4px solid var(--success-color);
+            padding: 1rem;
+            margin-bottom: 1rem;
+            background: #f0fdf4;
+            border-radius: 5px;
+        }
+
+        .loading-spinner {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .progress-container {
+            display: none;
+            margin-top: 1rem;
+        }
+
+        .skill-btn {
+            margin: 0.25rem;
+        }
+
+        .nav-pills .nav-link {
+            font-size: 0.875rem;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+        }
+
+        .nav-pills .nav-link.active {
+            background: var(--primary-color);
+        }
+
+        textarea.form-control {
+            font-family: 'Courier New', monospace;
+            font-size: 0.875rem;
+            resize: vertical;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <!-- Header -->
+        <div class="card header-card">
+            <div class="card-body text-center py-4">
+                <h1 class="mb-2"><i class="fas fa-chart-line text-primary"></i> 어닝콜 DSS 자동 검수 시스템</h1>
+                <p class="text-muted mb-0">Claude AI 기반 재무 데이터 불일치 자동 감지</p>
+            </div>
+        </div>
+
+        <!-- Upload Section -->
+        <div class="card">
+            <div class="card-body p-4">
+                <h3 class="mb-4"><i class="fas fa-upload"></i> 파일 업로드</h3>
+
+                <form id="uploadForm" enctype="multipart/form-data">
+                    <div class="row">
+                        <!-- 어닝콜 문서 -->
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-file-alt text-primary"></i> 어닝콜 문서
+                            </label>
+
+                            <!-- URL 입력 -->
+                            <div class="mb-3">
+                                <label class="form-label"><i class="fas fa-link"></i> URL 입력</label>
+                                <div class="input-group mb-2">
+                                    <input type="text" class="form-control" id="earningCallUrl" name="earning_call_url"
+                                           placeholder="PDF URL을 붙여넣으세요">
+                                    <button class="btn btn-outline-primary" type="button" id="convertUrlBtn">
+                                        <i class="fas fa-exchange-alt"></i> URL 변환
+                                    </button>
+                                </div>
+                                <small class="text-muted d-block">
+                                    <i class="fas fa-magic"></i>
+                                    네이버 뷰어 URL을 붙여넣고 <strong>"URL 변환"</strong> 버튼 클릭<br>
+                                    <i class="fas fa-link"></i> 또는 직접 PDF URL 사용: https://stock.pstatic.net/.../파일명.pdf
+                                </small>
+                            </div>
+
+                            <!-- 텍스트 입력 -->
+                            <div class="mb-2">
+                                <label class="form-label"><i class="fas fa-edit"></i> 또는 텍스트 직접 입력</label>
+                                <textarea class="form-control" id="earningCallText" name="earning_call_text"
+                                          rows="8" placeholder="어닝콜 문서 내용을 여기에 붙여넣으세요..."></textarea>
+                                <small class="text-muted">HTML, 텍스트 등 모든 형식 지원</small>
+                            </div>
+                        </div>
+
+                        <!-- DSS 재무 데이터 -->
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-database text-success"></i> DSS 재무 데이터
+                            </label>
+
+                            <!-- 텍스트 입력 -->
+                            <div>
+                                <label class="form-label"><i class="fas fa-edit"></i> 텍스트 입력</label>
+                                <textarea class="form-control" id="dssDataText" name="dss_data_text"
+                                          rows="12" placeholder="DSS 재무 데이터를 여기에 붙여넣으세요..."></textarea>
+                                <small class="text-muted">텍스트, CSV 형식 등 모든 형식 지원</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="text-center mt-4">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-play-circle"></i> 검수 시작
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Loading Spinner -->
+                <div class="loading-spinner" id="loadingSpinner">
+                    <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+                        <span class="visually-hidden">검수 중...</span>
+                    </div>
+                    <p class="mt-3 fw-bold">AI가 문서를 분석하고 있습니다...</p>
+                    <p class="text-muted">약 30초~1분 소요됩니다</p>
+                </div>
+
+                <!-- Progress Bar -->
+                <div class="progress-container" id="progressContainer">
+                    <div class="progress" style="height: 30px;">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated"
+                             role="progressbar" id="progressBar" style="width: 0%">0%</div>
+                    </div>
+                    <p class="text-center mt-2" id="progressText">준비 중...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div class="card results-card" id="resultsCard">
+            <div class="card-body p-4">
+                <h3 class="mb-4"><i class="fas fa-chart-bar"></i> 검수 결과</h3>
+
+                <!-- Summary Stats - Simplified -->
+                <div class="d-flex justify-content-center gap-4 mb-4" id="summaryStats">
+                    <!-- Stats will be inserted here -->
+                </div>
+
+                <!-- Corrected DSS - Main Section -->
+                <div class="card mb-4">
+                    <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="mb-0">
+                                <i class="fas fa-check-circle"></i> 수정된 DSS
+                            </h5>
+                            <small>숫자 오류 및 중요한 해석 문제(과장/축소/문맥누락)를 수정한 버전</small>
+                        </div>
+                        <button class="btn btn-light btn-sm" onclick="copyToClipboard('correctedDssText')">
+                            <i class="fas fa-copy"></i> 복사하기
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div id="correctedDssText" style="white-space: pre-wrap; font-family: inherit; line-height: 1.8;"></div>
+                    </div>
+                </div>
+
+                <!-- Details Section - Collapsible -->
+                <div class="card">
+                    <div class="card-header bg-light">
+                        <button class="btn btn-link text-decoration-none w-100 text-start" type="button"
+                                data-bs-toggle="collapse" data-bs-target="#detailsSection">
+                            <i class="fas fa-chevron-down"></i> 상세 내역 보기
+                        </button>
+                    </div>
+                    <div class="collapse" id="detailsSection">
+                        <div class="card-body">
+                            <!-- Discrepancies -->
+                            <div class="mb-4" id="discrepanciesSection" style="display: none;">
+                                <h5 class="text-danger mb-3">
+                                    <i class="fas fa-exclamation-triangle"></i> 불일치 항목
+                                </h5>
+                                <div id="discrepanciesList"></div>
+                            </div>
+
+                            <!-- Matched Items -->
+                            <div class="mb-4" id="matchedSection" style="display: none;">
+                                <h5 class="text-success mb-3">
+                                    <i class="fas fa-check-circle"></i> 일치 항목
+                                </h5>
+                                <div id="matchedList"></div>
+                            </div>
+
+                            <!-- Interpretation Validation -->
+                            <div class="mb-4" id="interpretationSection" style="display: none;">
+                                <h5 class="text-info mb-3">
+                                    <i class="fas fa-search"></i> 문맥 검증
+                                </h5>
+                                <div id="interpretationValidation"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let validationResults = null;
+
+        // Form submit
+        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const formData = new FormData();
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            const resultsCard = document.getElementById('resultsCard');
+            const uploadForm = document.getElementById('uploadForm');
+
+            // 어닝콜 데이터 - URL 또는 텍스트 입력
+            const ecUrl = document.getElementById('earningCallUrl').value;
+            const ecText = document.getElementById('earningCallText').value;
+
+            // URL이 우선 (둘 다 있으면 URL 사용)
+            if (ecUrl.trim()) {
+                formData.append('earning_call_url', ecUrl);
+            } else if (ecText.trim()) {
+                formData.append('earning_call_text', ecText);
+            } else {
+                alert('어닝콜 문서를 URL 또는 텍스트로 입력해주세요');
+                return;
+            }
+
+            // DSS 데이터 - 텍스트 입력만
+            const dssText = document.getElementById('dssDataText').value;
+            if (!dssText.trim()) {
+                alert('DSS 데이터를 입력해주세요');
+                return;
+            }
+            formData.append('dss_data_text', dssText);
+
+            // Show loading
+            uploadForm.style.display = 'none';
+            loadingSpinner.style.display = 'block';
+            resultsCard.style.display = 'none';
+
+            try {
+                const response = await fetch('/api/validate', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                // 응답 상태 확인
+                if (!response.ok) {
+                    let errorMessage = '서버 오류가 발생했습니다.';
+                    try {
+                        const errorData = await response.json();
+                        errorMessage = errorData.error || errorMessage;
+                    } catch (e) {
+                        errorMessage = `서버 응답 오류 (HTTP ${response.status})`;
+                    }
+                    throw new Error(errorMessage);
+                }
+
+                const data = await response.json();
+
+                if (data.success) {
+                    validationResults = data.result;
+                    displayResults(data.result);
+                    resultsCard.style.display = 'block';
+                } else {
+                    alert('오류: ' + data.error);
+                    uploadForm.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Validation error:', error);
+                let errorMsg = error.message;
+
+                // 네트워크 오류인 경우 더 자세한 메시지
+                if (error.message === 'Failed to fetch') {
+                    errorMsg = '서버에 연결할 수 없습니다. 서버가 실행 중인지 확인해주세요.\n\n' +
+                               '가능한 원인:\n' +
+                               '1. 서버가 중지되었거나 재시작 중입니다\n' +
+                               '2. 파일이 너무 커서 처리 시간이 오래 걸립니다\n' +
+                               '3. 네트워크 연결에 문제가 있습니다\n\n' +
+                               '잠시 후 다시 시도해주세요.';
+                }
+
+                alert('오류 발생:\n' + errorMsg);
+                uploadForm.style.display = 'block';
+            } finally {
+                loadingSpinner.style.display = 'none';
+            }
+        });
+
+        function displayResults(result) {
+            const summary = result.summary;
+
+            // Display summary stats - Simplified
+            const summaryStats = document.getElementById('summaryStats');
+            summaryStats.innerHTML = `
+                <div class="text-center px-4 py-2 bg-success bg-opacity-10 rounded">
+                    <div class="fs-5 fw-bold text-success">${summary.matched_count}</div>
+                    <div class="small text-muted">일치 항목</div>
+                </div>
+                <div class="text-center px-4 py-2 bg-danger bg-opacity-10 rounded">
+                    <div class="fs-5 fw-bold text-danger">${summary.discrepancy_count}</div>
+                    <div class="small text-muted">불일치 항목</div>
+                </div>
+            `;
+
+            // Display discrepancies
+            const discrepanciesList = document.getElementById('discrepanciesList');
+            if (result.discrepancies && result.discrepancies.length > 0) {
+                discrepanciesList.innerHTML = result.discrepancies.map((disc, idx) => `
+                    <div class="discrepancy-item">
+                        <h5><i class="fas fa-exclamation-circle text-danger"></i> ${disc.earning_call.metric} (${disc.earning_call.period})</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <strong>어닝콜:</strong> ${Number(disc.earning_call.value).toFixed(2)} ${disc.earning_call.unit}<br>
+                                <small class="text-muted">${disc.earning_call.context.substring(0, 80)}...</small>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>DSS:</strong> ${Number(disc.dss.value).toFixed(2)} ${disc.dss.unit}<br>
+                                <small class="text-muted">${disc.dss.context.substring(0, 80)}...</small>
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            <span class="badge bg-danger">차이: ${Number(disc.difference).toFixed(2)} ${disc.earning_call.unit} (${Number(disc.difference_pct).toFixed(2)}%)</span>
+                            <span class="badge bg-info">유사도: ${(disc.similarity * 100).toFixed(0)}%</span>
+                        </div>
+                    </div>
+                `).join('');
+
+                if (result.discrepancies.length === 10) {
+                    discrepanciesList.innerHTML += '<p class="text-muted text-center mt-3">처음 10개만 표시됩니다. 전체 보고서를 다운로드하세요.</p>';
+                }
+            } else {
+                discrepanciesList.innerHTML = '<p class="text-center text-muted">불일치 항목이 없습니다.</p>';
+            }
+
+            // Display matched items (더 상세하게)
+            const matchedList = document.getElementById('matchedList');
+            if (result.matched && result.matched.length > 0) {
+                matchedList.innerHTML = result.matched.map((match, idx) => `
+                    <div class="match-item" style="border-left: 3px solid #28a745;">
+                        <h6><i class="fas fa-check-circle text-success"></i> ${match.earning_call.metric} (${match.earning_call.period})</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p class="mb-1"><strong>어닝콜 값:</strong> ${Number(match.earning_call.value).toFixed(2)} ${match.earning_call.unit}</p>
+                                <small class="text-muted">"${match.earning_call.context.substring(0, 100)}..."</small>
+                            </div>
+                            <div class="col-md-6">
+                                <p class="mb-1"><strong>DSS 값:</strong> ${Number(match.dss.value).toFixed(2)} ${match.dss.unit}</p>
+                                <small class="text-muted">"${match.dss.context.substring(0, 100)}..."</small>
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            <span class="badge bg-success">일치</span>
+                            <span class="badge bg-info">유사도: ${(match.similarity * 100).toFixed(0)}%</span>
+                            ${match.earning_call.type ? `<span class="badge bg-secondary">${match.earning_call.type}</span>` : ''}
+                        </div>
+                    </div>
+                `).join('');
+
+                // 어닝콜에만 있는 항목 추가
+                if (result.only_in_earning_call && result.only_in_earning_call.length > 0) {
+                    matchedList.innerHTML += '<hr><h5 class="mt-4 text-warning">어닝콜에만 있는 항목 (DSS 누락)</h5>';
+                    matchedList.innerHTML += result.only_in_earning_call.map(item => `
+                        <div class="match-item" style="border-left: 3px solid #ffc107;">
+                            <h6><i class="fas fa-exclamation-circle text-warning"></i> ${item.metric} (${item.period})</h6>
+                            <p class="mb-1"><strong>값:</strong> ${Number(item.value).toFixed(2)} ${item.unit}</p>
+                            <small class="text-muted">"${item.context.substring(0, 150)}..."</small>
+                            <div class="mt-2">
+                                <span class="badge bg-warning text-dark">DSS에 누락됨</span>
+                                ${item.type ? `<span class="badge bg-secondary">${item.type}</span>` : ''}
+                            </div>
+                        </div>
+                    `).join('');
+                }
+
+                // DSS에만 있는 항목 추가
+                if (result.only_in_dss && result.only_in_dss.length > 0) {
+                    matchedList.innerHTML += '<hr><h5 class="mt-4 text-danger">DSS에만 있는 항목 (어닝콜에 없음)</h5>';
+                    matchedList.innerHTML += result.only_in_dss.map(item => `
+                        <div class="match-item" style="border-left: 3px solid #dc3545;">
+                            <h6><i class="fas fa-times-circle text-danger"></i> ${item.metric} (${item.period})</h6>
+                            <p class="mb-1"><strong>값:</strong> ${Number(item.value).toFixed(2)} ${item.unit}</p>
+                            <small class="text-muted">"${item.context.substring(0, 150)}..."</small>
+                            <div class="mt-2">
+                                <span class="badge bg-danger">어닝콜에 없음 (출처 불명)</span>
+                                ${item.type ? `<span class="badge bg-secondary">${item.type}</span>` : ''}
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            } else {
+                matchedList.innerHTML = '<p class="text-center text-muted">일치 항목이 없습니다.</p>';
+            }
+
+            // Display interpretation validation
+            const interpretationValidation = document.getElementById('interpretationValidation');
+            if (result.interpretation_validation) {
+                const validation = result.interpretation_validation;
+                const assessment = validation.overall_assessment || {};
+                const issues = validation.interpretation_issues || [];
+
+                let html = `
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <h5>전체 평가</h5>
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="text-center">
+                                        <h3>${assessment.accuracy_score || 0}</h3>
+                                        <small>정확도 점수</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="text-center">
+                                        <h3 class="text-${assessment.faithfulness === 'good' ? 'success' : assessment.faithfulness === 'fair' ? 'warning' : 'danger'}">
+                                            ${assessment.faithfulness === 'good' ? '우수' : assessment.faithfulness === 'fair' ? '보통' : '미흡'}
+                                        </h3>
+                                        <small>충실도</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="text-center">
+                                        <h3 class="text-${issues.length > 0 ? 'danger' : 'success'}">${issues.length}</h3>
+                                        <small>발견된 문제</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="text-center">
+                                        <h3 class="text-${assessment.major_issues_count > 0 ? 'danger' : 'success'}">${assessment.major_issues_count || 0}</h3>
+                                        <small>중대한 문제</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <p class="mt-3 mb-0"><strong>요약:</strong> ${assessment.summary || '평가 없음'}</p>
+                        </div>
+                    </div>
+                `;
+
+                if (issues.length > 0) {
+                    html += '<h5 class="mt-4 mb-3">발견된 문제점</h5>';
+                    issues.forEach((issue, idx) => {
+                        const severityColor = issue.severity === 'high' ? 'danger' : issue.severity === 'medium' ? 'warning' : 'info';
+                        const issueTypeLabel = {
+                            '과장': '[과장]',
+                            '축소': '[축소]',
+                            '확대해석': '[확대해석]',
+                            '문맥누락': '[문맥누락]',
+                            '조건무시': '[조건무시]',
+                            '기타': '[기타]'
+                        }[issue.issue_type] || issue.issue_type;
+
+                        html += `
+                            <div class="discrepancy-item" style="border-left: 4px solid var(--bs-${severityColor});">
+                                <h5>
+                                    <span class="badge bg-${severityColor}">${issueTypeLabel}</span>
+                                    ${issue.severity === 'high' ? '[중요]' : issue.severity === 'medium' ? '[보통]' : '[경미]'}
+                                </h5>
+                                <div class="alert alert-light mb-3">
+                                    <div class="mb-2">
+                                        <strong>[문제] DSS 문장:</strong><br>
+                                        <span class="text-danger">"${issue.dss_statement}"</span>
+                                    </div>
+                                    <div class="mb-2">
+                                        <strong>[원문] 어닝콜:</strong><br>
+                                        <span class="text-muted">"${issue.earning_call_context}"</span>
+                                    </div>
+                                </div>
+                                <div class="mb-2">
+                                    <strong>[분석] 문제점:</strong><br>
+                                    <span class="text-warning">${issue.problem}</span>
+                                </div>
+                                <div>
+                                    <strong>[제안] 수정 방향:</strong><br>
+                                    <span class="text-success">${issue.suggestion}</span>
+                                </div>
+                            </div>
+                        `;
+                    });
+                } else {
+                    html += '<p class="text-center text-success mt-4"><i class="fas fa-check-circle"></i> DSS가 어닝콜 내용을 정확하게 반영했습니다!</p>';
+                }
+
+                interpretationValidation.innerHTML = html;
+            } else {
+                interpretationValidation.innerHTML = '<p class="text-center text-muted">문맥 검증 데이터가 없습니다.</p>';
+            }
+
+            // Display corrected DSS with highlights and footnotes
+            if (result.corrected_dss_versions) {
+                const versions = result.corrected_dss_versions;
+                const correctedText = versions.corrected_dss || '생성 중...';
+                const correctedDssContainer = document.getElementById('correctedDssText');
+
+                // Highlight changes based on corrections with footnotes
+                let highlightedText = correctedText;
+                let footnotes = [];
+
+                if (result.corrections_needed && result.corrections_needed.length > 0) {
+                    result.corrections_needed.forEach((correction, index) => {
+                        const footnoteNum = index + 1;
+                        const correctValue = correction.correct_value;
+                        const incorrectValue = correction.dss_current_value;
+
+                        // Create regex to find the corrected values
+                        if (correctValue && correctValue !== incorrectValue) {
+                            const escapedValue = correctValue.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                            const regex = new RegExp(`(${escapedValue})`, 'gi');
+
+                            // Replace with highlighted text and footnote number
+                            highlightedText = highlightedText.replace(regex,
+                                `<mark style="background-color: #d4edda; padding: 2px 4px; border-radius: 3px; font-weight: bold; position: relative;">$1<sup style="color: #0d6efd; font-weight: bold; cursor: help;" title="각주 ${footnoteNum} 참고">[${footnoteNum}]</sup></mark>`);
+                        }
+
+                        // Add footnote
+                        const severityColor = {
+                            'critical': 'danger',
+                            'high': 'warning',
+                            'medium': 'info',
+                            'low': 'secondary'
+                        }[correction.severity] || 'secondary';
+
+                        footnotes.push(`
+                            <div class="footnote-item mb-3 p-3 border-start border-4 border-${severityColor}" style="background-color: #f8f9fa;">
+                                <div class="d-flex align-items-start">
+                                    <strong class="text-primary me-2">[${footnoteNum}]</strong>
+                                    <div class="flex-grow-1">
+                                        <div class="mb-2">
+                                            <strong>${correction.metric}</strong> <small class="text-muted">(${correction.period})</small>
+                                            <span class="badge bg-${severityColor} ms-2">${correction.severity_label}</span>
+                                        </div>
+                                        <div class="row mb-2">
+                                            <div class="col-6">
+                                                <small class="text-muted">변경 전 (DSS):</small><br>
+                                                <span class="text-danger fw-bold">${incorrectValue}</span>
+                                            </div>
+                                            <div class="col-6">
+                                                <small class="text-muted">변경 후 (정확한 값):</small><br>
+                                                <span class="text-success fw-bold">${correctValue}</span>
+                                            </div>
+                                        </div>
+                                        <div class="small">
+                                            <span class="text-muted">💡 수정 이유:</span> ${correction.correction}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `);
+                    });
+
+                    // Display text with highlights
+                    correctedDssContainer.innerHTML = highlightedText;
+
+                    // Add footnotes section below
+                    if (footnotes.length > 0) {
+                        correctedDssContainer.innerHTML += `
+                            <hr class="my-4">
+                            <div class="footnotes-section">
+                                <h6 class="text-secondary mb-3">
+                                    <i class="fas fa-info-circle"></i> 수정 사항 상세
+                                </h6>
+                                ${footnotes.join('')}
+                            </div>
+                        `;
+                    }
+                } else {
+                    correctedDssContainer.innerHTML = highlightedText;
+                }
+            }
+
+            // Show/hide detail sections based on content
+            const discrepanciesSection = document.getElementById('discrepanciesSection');
+            const matchedSection = document.getElementById('matchedSection');
+            const interpretationSection = document.getElementById('interpretationSection');
+
+            if (result.discrepancies && result.discrepancies.length > 0) {
+                discrepanciesSection.style.display = 'block';
+            }
+            if (result.matched && result.matched.length > 0) {
+                matchedSection.style.display = 'block';
+            }
+            if (result.interpretation_validation && result.interpretation_validation.interpretation_issues &&
+                result.interpretation_validation.interpretation_issues.length > 0) {
+                interpretationSection.style.display = 'block';
+            }
+
+            // Show download button (if exists)
+            const downloadBtn = document.getElementById('downloadBtn');
+            if (downloadBtn) {
+                downloadBtn.style.display = 'inline-block';
+                downloadBtn.onclick = () => {
+                    window.location.href = `/api/download/${result.result_file}`;
+                };
+            }
+        }
+
+        // URL 변환 버튼
+        document.getElementById('convertUrlBtn').addEventListener('click', function() {
+            const urlInput = document.getElementById('earningCallUrl');
+            const url = urlInput.value.trim();
+
+            if (!url) {
+                alert('URL을 먼저 입력해주세요');
+                return;
+            }
+
+            try {
+                // 네이버 증권 PDF 뷰어 URL에서 실제 PDF URL 추출
+                if (url.includes('m.stock.naver.com/pdf?url=') || url.includes('stock.naver.com/pdf?url=')) {
+                    const urlObj = new URL(url);
+                    const pdfUrl = urlObj.searchParams.get('url');
+
+                    if (pdfUrl) {
+                        urlInput.value = pdfUrl;
+                        alert('직접 PDF URL로 변환되었습니다!\n\n' + pdfUrl);
+                    } else {
+                        alert('URL 파라미터를 찾을 수 없습니다.');
+                    }
+                } else if (url.includes('stock.pstatic.net')) {
+                    alert('이미 직접 PDF URL입니다. 그대로 사용하세요!');
+                } else {
+                    alert('네이버 증권 PDF 뷰어 URL 또는 직접 PDF URL을 입력해주세요.');
+                }
+            } catch (e) {
+                alert('URL 형식이 올바르지 않습니다.');
+            }
+        });
+
+        // Copy to clipboard function
+        function copyToClipboard(elementId) {
+            const element = document.getElementById(elementId);
+            const text = element.textContent;
+
+            navigator.clipboard.writeText(text).then(() => {
+                alert('클립보드에 복사되었습니다!');
+            }).catch(err => {
+                console.error('복사 실패:', err);
+                alert('복사에 실패했습니다.');
+            });
+        }
+
+    </script>
+</body>
+</html>
