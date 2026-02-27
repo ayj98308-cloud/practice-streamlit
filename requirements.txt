@@ -1,0 +1,29 @@
+# Core dependencies
+anthropic>=0.40.0        # Claude API SDK
+python-dotenv>=1.0.0     # Environment variable management
+Flask>=2.3.0             # Web framework for UI
+requests>=2.31.0         # HTTP library for downloading PDFs
+
+# Data processing
+pandas>=2.0.0            # Data manipulation (for CSV if needed)
+openpyxl>=3.1.0          # Excel file support
+
+# Text processing
+python-docx>=1.0.0       # DOCX file parsing
+PyPDF2>=3.0.0            # PDF file parsing
+pdfplumber>=0.10.0       # Alternative PDF text extraction (better for some PDFs)
+PyMuPDF>=1.23.0          # PDF to image conversion (for OCR fallback)
+beautifulsoup4>=4.12.0   # HTML parsing
+Pillow>=10.0.0           # Image processing and resizing
+
+# Utilities
+colorama>=0.4.6          # Terminal colors for better output
+tqdm>=4.66.0             # Progress bars
+rich>=13.0.0             # Rich text formatting for CLI
+
+# Optional: For advanced text similarity
+# sentence-transformers>=2.2.0  # Semantic text embeddings (heavy dependency)
+# Levenshtein>=0.21.0           # Fast string similarity
+
+# Production Server
+gunicorn>=21.0.0
